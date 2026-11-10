@@ -136,7 +136,7 @@ class GGUFAsyncEngine:
           return llm.create_chat_completion(...)['choices'][0]['message']['content']
         """
         # Emulating execution latency for production pipeline demonstration
-        time.sleep(1.2)
+        time.sleep(1.1)
         
         # Deterministic simulation outputs for demonstration
         if "Mando" in system_prompt:
@@ -365,10 +365,18 @@ class AsyncFileWatcher:
                     settled_hash = self._calculate_hash()
                     
                     if settled_hash == current_hash and settled_hash != self.pipeline.state.last_file_hash:
-                        logger.info(f"Target modification detected on {self.target_path.name}")
+                        # Guard against overlapping runs if already processing
+                        if getattr(self.pipeline.state, "is_processing", False):
+                            continue
+                            
+                        logger.info(f"Target modification detected on {self.target_path}")
                         self.pipeline.state.last_file_hash = settled_hash
-                        # Run the complete agent loop
+                        
+                        # Run the complete agent Loop
                         await self.pipeline.run_pipeline(self.target_path)
+                        
+                        # Immediately update hash post-run to catch self-heal write-backs
+                        self.pipeline.state.last_file_hash = self._calculate_hash()
 
             except asyncio.CancelledError:
                 break
