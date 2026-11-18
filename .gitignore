@@ -1,0 +1,11 @@
+*.db
+*.db-journal
+*.sqlite
+*.key
+*.pem
+.env
+__pycache__/
+*.pyc
+*.log
+*.db-shm
+*.db-wal
